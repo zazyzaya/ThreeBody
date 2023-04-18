@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+    </head>
     <body>
-    <canvas id="canvas" width="1000" height="1000" style="border:1px solid #d3d3d3;">
-    Your browser does not support the HTML canvas tag.</canvas>
-    <script src="three_body.js"></script>
+        <div id="canvas-container">
+            <canvas id="trace">
+                Your browser does not support the HTML canvas tag.
+            </canvas>
+            <canvas id="planets"></canvas>
+        </div>
+        <script src="jq_pieces.js"></script>
+        <script src="three_body.js"></script>
     </body>
 </html>
 
