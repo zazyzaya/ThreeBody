@@ -18,3 +18,22 @@ canvas {
 #trace {
     z-index: -1;
 }
+
+#toolbar {
+    padding-top: 10px;
+}
+
+#pwrapper {
+    width: 100%;
+    padding-top: 5px;
+}
+.planet-info {
+    padding: 5px;
+    border: 1px solid #d3d3d3;
+    width: 25%;
+    display: inline-block;
+}
+
+input {
+    width: 50%;
+}

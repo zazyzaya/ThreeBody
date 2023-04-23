@@ -59,9 +59,34 @@ class Planet {
     }
     
     dist(other) {
+      var left, right, up, down;
+      if (this.x > other.x) {
+        left = other; 
+        right = this; 
+      } else {
+        left = this; 
+        right = other; 
+      }
+
+      if (this.y > other.y) {
+        up = this;
+        down = other;
+      } else {
+        up = other;
+        down = this; 
+      }
+
+      // Wrap around the screen 
+      if (W+left.x - right.x < right.x - left.x ) {
+        left.x = W+left.x; 
+      }
+      if (H+down.y - down.y < up.y - down.y) {
+        down.y = H+down.y; 
+      }
+  
       return Math.sqrt(
-          Math.pow((this.x-other.x), 2) + 
-          Math.pow((this.y-other.y), 2)
+          Math.pow(right.x - left.x, 2) + 
+          Math.pow(up.y - down.y, 2)
       ); 
     }    
 
@@ -137,7 +162,7 @@ class Planet {
         if (this.x < other.x) {
             this.vx = this.vx + Math.cos(theta)*f; 
             other.vx = other.vx - Math.cos(theta)*f;
-        } else {
+        } else { 
             this.vx = this.vx - Math.cos(theta)*f; 
             other.vx = other.vx + Math.cos(theta)*f;
         }
@@ -173,17 +198,8 @@ class Planet {
         this.y = this.y + this.vy; 
       }
 
-      /*
-      this.x = this.x % W; 
-      this.y = this.y % H; 
-
-      if (this.x < 0) {
-        this.x = this.x + W; 
-      }
-      if (this.y < 0) {
-        this.y = this.y + H;
-      }
-      */
+      this.x = mod(this.x, W); 
+      this.y = mod(this.y, H); 
     }
 }
 
@@ -192,7 +208,7 @@ function rand(high=1, neg=false){
     return -Math.random()*high
   }
   return Math.random()*high
-}
+} 
 
 function rand_pos(axis) {
   var mid = axis / 2; 
@@ -201,9 +217,9 @@ function rand_pos(axis) {
   return mid + rand(max_dist, true); 
 }
 
-p1 = new Planet(rand_pos(W), rand_pos(H), 1+rand(2), rand(0.1, true), rand(0.1, true));
-p2 = new Planet(rand_pos(W), rand_pos(H), 1+rand(2), rand(0.1, true), rand(0.1, true));
-p3 = new Planet(rand_pos(W), rand_pos(H), 1+rand(2), rand(0.1, true), rand(0.1, true));
+p1 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
+p2 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
+p3 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
 
 //var IMG_PIXELS = ctx.getImageData(0,0,W,H);
 
@@ -220,6 +236,25 @@ function reset() {
 
   const pctx = document.getElementById("trace").getContext("2d");
   pctx.clearRect(0,0, W,H);
+  init();
+}
+
+function display_info(id, p) {
+  var disp_str = 
+  "<label>" + id + "</label><br>"
+  + "<label>  Init X: </label><input type='text' id='init_x_" + id + "' value='" + p.x + "'><br>"
+  + "<label>  Init Y: </label><input type='text' id='init_y_" + id + "' value='" + p.y + "'><br>"
+  + "<label>  Init m: </label><input type='text' id='init_m_" + id + "' value='" + p.m + "'><br>"
+  + "<label>  Init vx: </label><input type='text' id='init_vx_" + id + "' value='" + p.vx + "'><br>"
+  +  "<label>  Init vy: </label><input type='text' id='init_vy_" + id + "' value='" + p.vy + "'><br>"
+  + "<label>  Color: </label><input type='color' id='color_" + id + "' value='" + p.color + "'>"; 
+  document.getElementById(id).innerHTML = disp_str; 
+
+  return disp_str; 
+}
+
+function load_info(id, p) {
+  
 }
 
 function init() {
@@ -231,6 +266,10 @@ function init() {
   set_size("planets");
   set_size("trace");
   
+  display_info('p1', p1);
+  display_info('p2', p2);
+  display_info('p3', p3);
+
   window.requestAnimationFrame(trace);
   window.requestAnimationFrame(draw_planets);
 }
@@ -259,7 +298,7 @@ function draw_planets() {
   ctx.clearRect(0, 0, W, H); // clear canvas
   //ctx.putImageData(IMG_PIXELS, 0, 0);  // put traces
 
-  // Default settings
+  // Default settings 
   ctx.save();
 
   // P1
