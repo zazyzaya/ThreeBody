@@ -31,7 +31,7 @@ class Planet {
     constructor(x, y, m, vx, vy, color=null) {
         this.x = x; 
         this.y = y;
-        this.m = m * 100;
+        this.m = m;
         this.vx = vx; 
         this.vy = vy; 
 
@@ -224,9 +224,9 @@ function rand_pos(axis) {
   return mid + rand(max_dist, true); 
 }
 
-p1 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
-p2 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
-p3 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+p1 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
+p2 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
+p3 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
 
 function set_size(canvas_id) {
   document.getElementById(canvas_id).setAttribute('width', W);
