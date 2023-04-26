@@ -2,7 +2,9 @@ const p1_pic = new Image();
 const p2_pic = new Image();
 const p3_pic = new Image();
 
-const G = 9;
+const G =  1
+const EARTH = 1 // 5.97219e24; // kg
+const AU = 1 // 1.5e18;        // m
 const p_size = 24;
 const W = document.getElementById('canvas-container').offsetWidth;
 const H = document.getElementById('canvas-container').offsetHeight; 
@@ -26,15 +28,19 @@ function mod(x,div) {
 }
 
 class Planet {
-    constructor(x, y, m, vx, vy) {
+    constructor(x, y, m, vx, vy, color=null) {
         this.x = x; 
         this.y = y;
-        this.m = m;
+        this.m = m * 100;
         this.vx = vx; 
         this.vy = vy; 
 
         this.pic = new Image();
-        this.color = generateColor();
+
+        if (color == null)
+          this.color = generateColor();
+        else
+          this.color = color; 
  
         this.bounce_x = 0; 
         this.bounce_y = 0; 
@@ -49,7 +55,7 @@ class Planet {
       ctx.beginPath();
       ctx.fillStyle = this.color; 
 
-      var size = 1+parseInt(this.vnorm(this.vx, this.vy)*5);
+      var size = 1+parseInt(this.vnorm(this.vx, this.vy));
       ctx.arc(mod(this.x, W), mod(this.y, H), size, 0, 2 * Math.PI, false);
       //ctx.rect(this.x%W, this.y%H, size,size);
       ctx.fill();
@@ -84,10 +90,10 @@ class Planet {
         down.y = H+down.y; 
       }
   
-      return Math.sqrt(
+      return Math.max(Math.sqrt(
           Math.pow(right.x - left.x, 2) + 
           Math.pow(up.y - down.y, 2)
-      ); 
+      ), p_size) * 100; 
     }    
 
     norm() {
@@ -153,11 +159,12 @@ class Planet {
         var f = (this.m * other.m)*G / Math.pow(d, 2); 
         var theta = this.angle(other); 
     
+        /*
         // Collision 
-        if (d < p_size) {
+        if (d <= p_size) {
           this.calc_momentum(other);
           return;
-        }
+        } //*/
 
         if (this.x < other.x) {
             this.vx = this.vx + Math.cos(theta)*f; 
@@ -217,26 +224,41 @@ function rand_pos(axis) {
   return mid + rand(max_dist, true); 
 }
 
-p1 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
-p2 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
-p3 = new Planet(rand_pos(W), rand_pos(H), 2+rand(2), rand(0.1, true), rand(0.1, true));
-
-//var IMG_PIXELS = ctx.getImageData(0,0,W,H);
+p1 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+p2 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+p3 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
 
 function set_size(canvas_id) {
   document.getElementById(canvas_id).setAttribute('width', W);
   document.getElementById(canvas_id).setAttribute('height', H);
-
 }
 
 function reset() {
-  p1 = new Planet(rand(W), rand(H), 1, rand(0.01, true), rand(0.01, true));
-  p2 = new Planet(rand(W), rand(H), 1, rand(0.01, true), rand(0.01, true));
-  p3 = new Planet(rand(W), rand(H), 1, rand(0.01, true), rand(0.01, true));
+  p1 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+  p2 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+  p3 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
 
   const pctx = document.getElementById("trace").getContext("2d");
   pctx.clearRect(0,0, W,H);
+
+  // Stop old animations
+  window.cancelAnimationFrame(t_frame);
+  window.cancelAnimationFrame(p_frame);
+
   init();
+}
+
+function clear_trails() {
+  const pctx = document.getElementById("trace").getContext("2d");
+  pctx.clearRect(0,0, W,H);
+}
+
+function save_trails() {
+  const pcanvas = document.getElementById("trace");
+  var link = document.getElementById('link');
+  link.setAttribute('download', 'PlanetTrace.png');
+  link.setAttribute('href', pcanvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
+  link.click();
 }
 
 function display_info(id, p) {
@@ -253,8 +275,28 @@ function display_info(id, p) {
   return disp_str; 
 }
 
-function load_info(id, p) {
-  
+function load_info(id) {
+  var x = parseFloat(document.getElementById('init_x_' + id).value);
+  var y = parseFloat(document.getElementById('init_y_' + id).value);
+  var m = parseFloat(document.getElementById('init_m_' + id).value);
+  var vx = parseFloat(document.getElementById('init_vx_' + id).value);
+  var vy = parseFloat(document.getElementById('init_vy_' + id).value);
+  var color = document.getElementById('color_' + id).value;
+
+  console.log(x,y,m,vx,vy,color);
+  return new Planet(x, y, m, vx, vy, color)
+}
+
+function submit() {
+  p1 = load_info('p1');
+  p2 = load_info('p2'); 
+  p3 = load_info('p3');
+
+  // Stop old animations
+  window.cancelAnimationFrame(t_frame);
+  window.cancelAnimationFrame(p_frame);
+
+  init(); 
 }
 
 function init() {
@@ -274,6 +316,7 @@ function init() {
   window.requestAnimationFrame(draw_planets);
 }
 
+var t_frame=null;
 function trace() {
   const pctx = document.getElementById("trace").getContext("2d");
   
@@ -281,8 +324,7 @@ function trace() {
   p2.pixel_trail(pctx);
   p3.pixel_trail(pctx);
 
-  window.requestAnimationFrame(trace);
-
+  t_frame = window.requestAnimationFrame(trace);
 }
 
 function draw_planet(ctx, p) {
@@ -292,11 +334,10 @@ function draw_planet(ctx, p) {
   ctx.save();
 }
 
+var p_frame = null; 
 function draw_planets() {
   const ctx = document.getElementById("planets").getContext("2d");
-
   ctx.clearRect(0, 0, W, H); // clear canvas
-  //ctx.putImageData(IMG_PIXELS, 0, 0);  // put traces
 
   // Default settings 
   ctx.save();
@@ -327,7 +368,7 @@ function draw_planets() {
   p2.update();
   p3.update();
 
-  window.requestAnimationFrame(draw_planets);
+  p_frame = window.requestAnimationFrame(draw_planets);
 }
 
 init();

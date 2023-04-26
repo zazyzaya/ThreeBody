@@ -4,20 +4,26 @@
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <div id="canvas-container">
-            <canvas id="trace">
-                Your browser does not support the HTML canvas tag.
-            </canvas>
-            <canvas id="planets"></canvas>
+        <div id="everything">
+            <div id="canvas-container">
+                <canvas id="trace">
+                    Your browser does not support the HTML canvas tag.
+                </canvas>
+                <canvas id="planets"></canvas>
+            </div>
+            <div id="pwrapper">
+                <div id="p1" class="planet-info"></div>
+                <div id="p2" class="planet-info"></div>
+                <div id="p3" class="planet-info"></div>
+            </div>
+            <div id="toolbar">
+                <button onclick="submit()">Submit</button>
+                <button onclick="reset()">Reset</button>
+                <button onclick="clear_trails()">Clear Trails</button>
+                <button onclick="save_trails()">Save Img</button>
+            </div>
         </div>
-        <div id="pwrapper">
-            <div id="p1" class="planet-info"></div>
-            <div id="p2" class="planet-info"></div>
-            <div id="p3" class="planet-info"></div>
-        </div>
-        <div id="toolbar">
-            <button type="button" id="reset" onclick="reset()">Reset</button>
-        </div>
+        <a id="link"></a>
         <script src="three_body.js"></script>
     </body>
 </html>
