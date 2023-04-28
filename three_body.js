@@ -2,9 +2,9 @@ const p1_pic = new Image();
 const p2_pic = new Image();
 const p3_pic = new Image();
 
-const G =  1
-const EARTH = 1 // 5.97219e24; // kg
-const AU = 1 // 1.5e18;        // m
+const G =  6.67e-11
+const EARTH = 5.97219e9; // kg
+const AU = 3.825e10;        // m
 const p_size = 24;
 const W = document.getElementById('canvas-container').offsetWidth;
 const H = document.getElementById('canvas-container').offsetHeight; 
@@ -28,7 +28,7 @@ function mod(x,div) {
 }
 
 class Planet {
-    constructor(x, y, m, vx, vy, color=null) {
+    constructor(x, y, m, vx, vy, color=null, screen_wrap=false) {
         this.x = x; 
         this.y = y;
         this.m = m;
@@ -41,9 +41,8 @@ class Planet {
           this.color = generateColor();
         else
           this.color = color; 
- 
-        this.bounce_x = 0; 
-        this.bounce_y = 0; 
+
+        this.wrap = screen_wrap;
     }
 
     pixel_trail(ctx) {
@@ -64,7 +63,7 @@ class Planet {
       this.prev_y = this.y; 
     }
     
-    dist(other) {
+    wrapped_dist(other) {
       var left, right, up, down;
       if (this.x > other.x) {
         left = other; 
@@ -93,8 +92,17 @@ class Planet {
       return Math.max(Math.sqrt(
           Math.pow(right.x - left.x, 2) + 
           Math.pow(up.y - down.y, 2)
-      ), p_size) * 100; 
+      ), p_size); 
     }    
+
+    dist(other) {
+      if (this.wrap) return this.wrapped_dist(other);
+
+      return Math.max(Math.sqrt(
+        Math.pow(this.x - other.x, 2) + 
+        Math.pow(this.y - other.y, 2)
+      ), p_size);
+    }
 
     norm() {
       return Math.sqrt(this.x*this.x + this.y*this.y)
@@ -113,73 +121,26 @@ class Planet {
         return Math.acos(cos_theta); 
     }
 
-    component_momentum(my_v, your_v, my_m, your_m) {
-      // my_v' =  (my_m-your_m)              2*your_m
-      //           -----------  (my_v) +  ------------- (your_v)
-      //          (my_m+your_m)           my_m + your_m 
-      //                term 1                  term 2
-      var term1 = (my_m - your_m) / (my_m + your_m); 
-      term1 = term1 * my_v; 
-
-      var term2 = (2*your_m) / (my_m + your_m);
-      term2 = term2 * your_v; 
-
-      return term1 + term2; 
-    }
-
-
-    calc_momentum(other) {
-      this.bounce_x = this.component_momentum(
-        this.vx, other.vx, 
-        this.m, other.m
-      ); 
-      this.bounce_y = this.component_momentum(
-        this.vy, other.vy, 
-        this.m, other.m
-      );
-
-      other.bounce_x = this.component_momentum(
-        other.vx, this.vx, 
-        other.m, this.m 
-      )
-      other.bounce_y = this.component_momentum(
-        other.vy, this.vy, 
-        other.m, this.m 
-      )
-    }
-
     calc_force(other) {
-        // Has already been calculated 
-        if (this.bounce_x || this.bounce_y) {
-          return;
-        }
-
         // M1M2G / d^2 
         var d = this.dist(other);
-        var f = (this.m * other.m)*G / Math.pow(d, 2); 
+        var f = (this.m*EARTH * other.m*EARTH)*G / (AU*Math.pow(d, 2)); 
         var theta = this.angle(other); 
-    
-        /*
-        // Collision 
-        if (d <= p_size) {
-          this.calc_momentum(other);
-          return;
-        } //*/
 
         if (this.x < other.x) {
-            this.vx = this.vx + Math.cos(theta)*f; 
-            other.vx = other.vx - Math.cos(theta)*f;
+            this.vx = this.vx + Math.cos(theta)*f/this.m; 
+            other.vx = other.vx - Math.cos(theta)*f/other.m;
         } else { 
-            this.vx = this.vx - Math.cos(theta)*f; 
-            other.vx = other.vx + Math.cos(theta)*f;
+            this.vx = this.vx - Math.cos(theta)*f/this.m; 
+            other.vx = other.vx + Math.cos(theta)*f/other.m;
         }
     
         if (this.y < other.y) {
-            this.vy = this.vy + Math.sin(theta)*f;
-            other.vy = other.vy - Math.sin(theta)*f; 
+            this.vy = this.vy + Math.sin(theta)*f/this.m;
+            other.vy = other.vy - Math.sin(theta)*f/other.m; 
         } else {
-            this.vy = this.vy - Math.sin(theta)*f;
-            other.vy = other.vy + Math.sin(theta)*f; 
+            this.vy = this.vy - Math.sin(theta)*f/this.m;
+            other.vy = other.vy + Math.sin(theta)*f/other.m; 
         }
     }
 
@@ -188,25 +149,13 @@ class Planet {
       // unchanged to calc for both, so store bounce
       // change in velocity seperate then switch to 0 
       // after they have already ricochetted 
-      if (this.bounce_x != 0) {
-        this.x = this.x + this.bounce_x;
-        this.vx = this.bounce_x; 
-        this.bounce_x = 0; 
-      }
-      else {
-        this.x = this.x + this.vx; 
-      }
+      this.x = this.x + this.vx; 
+      this.y = this.y + this.vy;
 
-      if (this.bounce_y != 0) {
-        this.y = this.y + this.bounce_y; 
-        this.vy = this.bounce_y; 
-        this.bounce_y = 0;
-      } else {
-        this.y = this.y + this.vy; 
+      if (this.wrap) {
+        this.x = mod(this.x, W); 
+        this.y = mod(this.y, H); 
       }
-
-      this.x = mod(this.x, W); 
-      this.y = mod(this.y, H); 
     }
 }
 
@@ -219,14 +168,14 @@ function rand(high=1, neg=false){
 
 function rand_pos(axis) {
   var mid = axis / 2; 
-  var max_dist = mid / 1.05; 
+  var max_dist = mid / 4; 
 
   return mid + rand(max_dist, true); 
 }
 
-p1 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
-p2 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
-p3 = new Planet(rand_pos(W), rand_pos(H), 1000+rand(2), rand(0.5, true), rand(0.5, true));
+p1 = new Planet(rand_pos(W), rand_pos(H), 2000+rand(250, true), 0,0);
+p2 = new Planet(rand_pos(W), rand_pos(H), 2000+rand(250, true), 0,0);
+p3 = new Planet(rand_pos(W), rand_pos(H), 2000+rand(250, true), 0,0);
 
 function set_size(canvas_id) {
   document.getElementById(canvas_id).setAttribute('width', W);
@@ -234,9 +183,9 @@ function set_size(canvas_id) {
 }
 
 function reset() {
-  p1 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
-  p2 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
-  p3 = new Planet(rand_pos(W), rand_pos(H), 10+rand(2), rand(0.5, true), rand(0.5, true));
+  p1 = new Planet(rand_pos(W), rand_pos(H), 1500+rand(250, true), 0,0);
+  p2 = new Planet(rand_pos(W), rand_pos(H), 1500+rand(250, true), 0,0);
+  p3 = new Planet(rand_pos(W), rand_pos(H), 1500+rand(250, true), 0,0);
 
   const pctx = document.getElementById("trace").getContext("2d");
   pctx.clearRect(0,0, W,H);
@@ -272,6 +221,7 @@ function display_info(id, p) {
   + "<label>  Color: </label><input type='color' id='color_" + id + "' value='" + p.color + "'>"; 
   document.getElementById(id).innerHTML = disp_str; 
 
+  document.getElementById('wrap').checked = p.wrap;
   return disp_str; 
 }
 
@@ -282,9 +232,10 @@ function load_info(id) {
   var vx = parseFloat(document.getElementById('init_vx_' + id).value);
   var vy = parseFloat(document.getElementById('init_vy_' + id).value);
   var color = document.getElementById('color_' + id).value;
+  var wrap = document.getElementById('wrap').checked;
+  console.log(x,y,m,vx,vy,color,wrap);
 
-  console.log(x,y,m,vx,vy,color);
-  return new Planet(x, y, m, vx, vy, color)
+  return new Planet(x, y, m, vx, vy, color, wrap=wrap)
 }
 
 function submit() {
@@ -354,11 +305,11 @@ function draw_planets() {
   ctx.restore();
   ctx.save();
 
-  // P3 
+   // P3 
   ctx.translate(mod(p3.x, W), mod(p3.y, H));
   ctx.drawImage(p3.pic, -12, -12);
   ctx.restore();
-  ctx.save()
+  ctx.save() // */
 
   p1.calc_force(p2); 
   p2.calc_force(p3);

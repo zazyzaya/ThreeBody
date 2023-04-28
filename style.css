@@ -48,7 +48,7 @@ canvas {
     display: inline-block;
 }
 
-input {
+.planet-info input {
     width: 50%;
 }
 
